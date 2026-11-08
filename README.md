@@ -30,6 +30,7 @@ regret matching at each info set.]
 ```bash
 javac rps/RPSTrainer.java && java -cp rps RPSTrainer
 javac kuhn/KuhnTrainer.java && java -cp kuhn KuhnTrainer
+python kuhn/exploitability.py
 
 ```
 

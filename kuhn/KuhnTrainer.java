@@ -1,3 +1,6 @@
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.TreeMap;
@@ -54,9 +57,17 @@ public class KuhnTrainer {
     }
 
     // ===== Train Kuhn poker =====
-    public void train(int iterations) {
+    public void train(int iterations) throws IOException {
         int[] cards = {1, 2, 3};
         double util = 0;
+
+        // NEW: record exploitability at checkpoints into a CSV file for plotting
+        new File("results").mkdirs();
+        PrintWriter csv = new PrintWriter("results/kuhn_exploitability.csv");
+        csv.println("iteration,exploitability");
+        System.out.println("Exploitability before training (uniform play): " + exploitability());
+        int nextCheckpoint = 1;
+
         for (int i = 0; i < iterations; i++) {
             // Shuffle cards
             for (int c1 = cards.length - 1; c1 > 0; c1--) {
@@ -66,8 +77,17 @@ public class KuhnTrainer {
                 cards[c2] = tmp;
             }
             util += cfr(cards, "", 1, 1);
+
+            // NEW: measure at iterations 1, 2, 3, ... growing by about 20% each time
+            int t = i + 1;
+            if (t == nextCheckpoint || t == iterations) {
+                csv.println(t + "," + exploitability());
+                nextCheckpoint = Math.max(t + 1, (int) Math.ceil(t * 1.2));
+            }
         }
+        csv.close();
         System.out.println("Average game value: " + util / iterations);
+        System.out.println("Final exploitability: " + exploitability());
         for (Node n : nodeMap.values())
             System.out.println(n);
     }
@@ -123,8 +143,80 @@ public class KuhnTrainer {
         return nodeUtil;
     }
 
+    // ===== NEW: Exploitability =====
+    // Info sets owned by each player (P1 = player 0, P2 = player 1)
+    static final String[][] INFO_SETS = {
+        {"1", "2", "3", "1pb", "2pb", "3pb"},
+        {"1p", "2p", "3p", "1b", "2b", "3b"}
+    };
+    // All 6 possible deals: {P1's card, P2's card}, each with probability 1/6
+    static final int[][] DEALS = {{1, 2}, {1, 3}, {2, 1}, {2, 3}, {3, 1}, {3, 2}};
+
+    // exploitability = 1/2 * (best P1 vs my P2 + best P2 vs my P1)
+    public double exploitability() {
+        return 0.5 * (bestResponseValue(0) + bestResponseValue(1));
+    }
+
+    // Try every pure strategy for brPlayer against my average strategy; return the best expected payoff.
+    // A pure strategy picks one action per info set: 6 info sets, 2 actions each, so 2^6 = 64 of them.
+    // Bit k of `mask` is the action (0 = pass, 1 = bet) at INFO_SETS[brPlayer][k].
+    private double bestResponseValue(int brPlayer) {
+        double best = Double.NEGATIVE_INFINITY;
+        for (int mask = 0; mask < 64; mask++) {
+            double total = 0;
+            for (int[] deal : DEALS)
+                total += valueForP1(deal, "", brPlayer, mask) / DEALS.length;
+            double valueForBr = (brPlayer == 0) ? total : -total;
+            best = Math.max(best, valueForBr);
+        }
+        return best;
+    }
+
+    // Expected payoff to P1 from this history: brPlayer plays the pure strategy `mask`,
+    // the other player plays my average strategy.
+    private double valueForP1(int[] cards, String history, int brPlayer, int mask) {
+        if (isTerminal(history))
+            return payoffForP1(cards, history);
+        int player = history.length() % 2;
+        String infoSet = cards[player] + history;
+        if (player == brPlayer) {
+            int action = (mask >> indexOf(INFO_SETS[brPlayer], infoSet)) & 1;
+            return valueForP1(cards, history + (action == 0 ? "p" : "b"), brPlayer, mask);
+        }
+        double[] s = averageStrategy(infoSet);
+        return s[0] * valueForP1(cards, history + "p", brPlayer, mask)
+             + s[1] * valueForP1(cards, history + "b", brPlayer, mask);
+    }
+
+    // My average strategy at an info set (uniform if training never reached it)
+    private double[] averageStrategy(String infoSet) {
+        Node node = nodeMap.get(infoSet);
+        return node == null ? new double[] {0.5, 0.5} : node.getAverageStrategy();
+    }
+
+    private static boolean isTerminal(String h) {
+        return h.equals("pp") || h.equals("bp") || h.equals("bb") || h.equals("pbp") || h.equals("pbb");
+    }
+
+    // Payoff to P1 at a finished hand (written separately from cfr on purpose, as an independent check)
+    private static double payoffForP1(int[] cards, String h) {
+        boolean p1Higher = cards[0] > cards[1];
+        switch (h) {
+            case "pp":  return p1Higher ? 1 : -1;  // check-check: showdown for the antes
+            case "bp":  return 1;                  // P1 bet, P2 folded
+            case "pbp": return -1;                 // P2 bet, P1 folded
+            default:    return p1Higher ? 2 : -2;  // "bb" or "pbb": bet-call showdown
+        }
+    }
+
+    private static int indexOf(String[] arr, String x) {
+        for (int k = 0; k < arr.length; k++)
+            if (arr[k].equals(x)) return k;
+        throw new IllegalArgumentException("unknown info set " + x);
+    }
+
     // ===== KuhnTrainer main method =====
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         int iterations = 1000000;
         new KuhnTrainer().train(iterations);
     }
