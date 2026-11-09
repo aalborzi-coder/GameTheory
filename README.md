@@ -2,8 +2,8 @@
 # CFR for Kuhn Poker
 
 Regret matching for rock-paper-scissors and counterfactual regret minimization (CFR)
-for Kuhn poker, implemented following Neller & Lanctot (2013), with a
-best-response function to measure exploitability.
+for Kuhn poker, implemented following Neller & Lanctot's tutorial (2013), with a
+best-response function to measure exploitability and an imperfect recall experiment.
 
 ## Results
 
@@ -84,22 +84,14 @@ rate O(1/√T). In a two-player zero-sum game, if both players' average regret i
 nothing about the current strategy, which is why the program reports the average
 strategy and the plot measures the average.
 
-## Run it
-
-```bash
-javac rps/RPSTrainer.java && java -cp rps RPSTrainer
-javac kuhn/KuhnTrainer.java && java -cp kuhn KuhnTrainer
-python kuhn/exploitability.py
-
-```
-
 ## Imperfect recall experiment
 
 Inspired by Berker et al., *The Value of Recall in Extensive-Form Games* (AAAI 2025).
 
 **Setup.** At P1's second decision (he passed, P2 bet), P1 can't tell 1 from 2: the
 info sets `1pb` and `2pb` merge into `JQpb`, so he must use one strategy for both.
-`P_FORGET` in `KuhnTrainer.java` sets how often this happens (0 = normal Kuhn, 1 = always).
+`P_FORGET` in `KuhnTrainer.java` sets how often this happens (0 = normal Kuhn, the
+default; 1 = always).
 
 **Result (P_FORGET = 1, 1,000,000 iterations).** P1's value against a best-responding P2
 drops from −1/18 ≈ −0.056 to −0.084, so forgetting costs at most about 0.028 chips per
@@ -116,12 +108,26 @@ by +2 (worst payoff → 0). This gives VoR ≈ 1.015, even though the loss is ab
 the game value. The shift changes VoR a lot (larger shifts push it toward 1), which raises
 the question of how VoR should be normalized in zero-sum games.
 
+## Run it
+
+```bash
+javac rps/RPSTrainer.java && java -cp rps RPSTrainer
+javac kuhn/KuhnTrainer.java && java -cp kuhn KuhnTrainer
+python kuhn/exploitability.py
+```
+
+For the imperfect recall experiment, set `P_FORGET` in `kuhn/KuhnTrainer.java` to 1.0
+(or 0.5) and rerun. Results go to `results/kuhn_exploitability_pforget_<value>.csv`.
+
 ## Next steps
+- Imperfect recall abstractions in Leduc poker: does VoR track how exploitable the
+  abstracted strategy is in the real game?
 - CFR+ and convergence comparison
-- Leduc poker
 - Monte Carlo CFR
 
 ## References
 - T. Neller and M. Lanctot, *An Introduction to Counterfactual Regret Minimization* (2013)
 - M. Zinkevich et al., *Regret Minimization in Games with Incomplete Information*, NeurIPS 2007
 - H. W. Kuhn, *A Simplified Form of Poker* (1950)
+- R. E. Berker, E. Tewolde, I. Anagnostides, T. Sandholm, V. Conitzer,
+  *The Value of Recall in Extensive-Form Games*, AAAI 2025
