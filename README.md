@@ -113,7 +113,7 @@ the question of how VoR should be normalized in zero-sum games.
 ```bash
 javac rps/RPSTrainer.java && java -cp rps RPSTrainer
 javac kuhn/KuhnTrainer.java && java -cp kuhn KuhnTrainer
-python kuhn/exploitability.py
+python plot_exploitability.py
 ```
 
 For the imperfect recall experiment, set `P_FORGET` in `kuhn/KuhnTrainer.java` to 1.0
