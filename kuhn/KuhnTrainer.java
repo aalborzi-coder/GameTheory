@@ -18,7 +18,7 @@ public class KuhnTrainer {
     //   0.0 = normal Kuhn (perfect recall)
     //   1.0 = always forgets
     //   0.5 = forgets half the time
-    public static final double P_FORGET = 1.0;
+    public static final double P_FORGET = 0;
 
     // Perfect-recall value of Kuhn for P1, to compare against
     public static final double PERFECT_RECALL_VALUE = -1.0 / 18.0;
@@ -81,7 +81,10 @@ public class KuhnTrainer {
 
         // Record exploitability at checkpoints into a CSV file for plotting
         new File("results").mkdirs();
-        PrintWriter csv = new PrintWriter("results/kuhn_exploitability_pforget_" + P_FORGET + ".csv");
+        String csvName = (P_FORGET == 0.0)
+    ? "results/kuhn_exploitability.csv"
+    : "results/kuhn_exploitability_pforget_" + P_FORGET + ".csv";
+PrintWriter csv = new PrintWriter(csvName);
         csv.println("iteration,exploitability");
         System.out.println("P_FORGET = " + P_FORGET);
         System.out.println("Exploitability before training (uniform play): " + exploitability());
