@@ -2,7 +2,7 @@
 # CFR for Kuhn Poker
 
 Regret matching for rock-paper-scissors and counterfactual regret minimization (CFR)
-for Kuhn poker, implemented from scratch following Neller & Lanctot (2013), with a
+for Kuhn poker, implemented following Neller & Lanctot (2013), with a
 best-response function to measure exploitability.
 
 ## Results
@@ -92,6 +92,29 @@ javac kuhn/KuhnTrainer.java && java -cp kuhn KuhnTrainer
 python kuhn/exploitability.py
 
 ```
+
+## Imperfect recall experiment
+
+Inspired by Berker et al., *The Value of Recall in Extensive-Form Games* (AAAI 2025).
+
+**Setup.** At P1's second decision (he passed, P2 bet), P1 can't tell 1 from 2: the
+info sets `1pb` and `2pb` merge into `JQpb`, so he must use one strategy for both.
+`P_FORGET` in `KuhnTrainer.java` sets how often this happens (0 = normal Kuhn, 1 = always).
+
+**Result (P_FORGET = 1, 1,000,000 iterations).** P1's value against a best-responding P2
+drops from −1/18 ≈ −0.056 to −0.084, so forgetting costs at most about 0.028 chips per
+hand. This is an upper bound: CFR has no convergence guarantee under imperfect recall,
+so a better forgetful strategy may exist.
+
+**Why.** Calling with 1 always loses, and calling with 2 was break-even, so the merged
+info set folds. P2 bluffs more after a pass (`1p`: 0.33 → 0.50), P1 starts betting 2 on
+his first move (0 → 0.50), 3 switches to checking to catch bluffs, and 1 stops bluffing
+because its bluffs no longer have value bets to hide behind.
+
+**Value of recall.** VoR is a ratio and needs nonnegative payoffs, so payoffs were shifted
+by +2 (worst payoff → 0). This gives VoR ≈ 1.015, even though the loss is about 50% of
+the game value. The shift changes VoR a lot (larger shifts push it toward 1), which raises
+the question of how VoR should be normalized in zero-sum games.
 
 ## Next steps
 - CFR+ and convergence comparison
