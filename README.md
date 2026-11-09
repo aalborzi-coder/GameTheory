@@ -17,8 +17,7 @@ After 1,000,000 iterations of chance-sampled CFR:
 - Exploitability: 0.0007 chips per hand
 
 Exploitability is half the sum of what a best-responding P1 and a best-responding P2
-win against the learned strategy. It is 0 exactly at a Nash equilibrium. The best
-response is found by trying all 2^6 = 64 pure strategies for each player.
+win against the learned strategy. 
 
 Info sets are named by the player's card followed by the betting so far
 (p = pass, b = bet). For example, `2b` means "I hold a 2 and my opponent bet."
@@ -44,7 +43,7 @@ P2's equilibrium strategy is unique, and the learned values match it.
 
 ## How it works
 
-Kuhn poker could be written as one big payoff matrix: each player picks a complete plan
+Kuhn poker could be written as one payoff matrix: each player picks a complete plan
 in advance (2^6 = 64 pure strategies each, so a 64×64 matrix). This is fine for Kuhn,
 but the number of plans grows exponentially with the number of decisions, so it is
 hopeless for larger games. CFR works on the game tree instead.
